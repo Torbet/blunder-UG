@@ -1,0 +1,28 @@
+* {
+  font-family: "Open Sans", sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 500px;
+  margin: 0 auto;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+}
+
+#board {
+  width: 100%;
+}
+
+#chart {
+  width: 100%;
+}
