@@ -82,7 +82,7 @@ def stockfish_move(board: chess.Board) -> chess.Move:
   return chess.Move.from_uci(stockfish.get_best_move())
 
 
-maia = Backend(Weights('data/misc/maia_weights.pb.gz'))
+maia = Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/misc/maia_weights.pb.gz')))
 
 
 def maia_move(board: chess.Board) -> chess.Move:
