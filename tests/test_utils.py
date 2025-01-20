@@ -18,13 +18,13 @@ class TestUtils(unittest.TestCase):
     self.assertEqual(parsed.shape, (12, 8, 8))
 
   def test_synthetic_dataset(self):
-    dataset = SyntheticDataset(100, 40, 0.3, 'cpu')
+    dataset = SyntheticDataset(100, 60, 0.3, 'cpu')
     self.assertEqual(len(dataset), 4 * 100)
 
     moves, evals, move_labels, game_labels = dataset[0]
-    self.assertEqual(moves.shape, (40, 12, 8, 8))
-    self.assertEqual(evals.shape, (40,))
-    self.assertEqual(move_labels.shape, (40,))
+    self.assertEqual(moves.shape, (60, 12, 8, 8))
+    self.assertEqual(evals.shape, (60,))
+    self.assertEqual(move_labels.shape, (60,))
     self.assertEqual(game_labels.shape, ())
 
   def test_processed_dataset(self):
