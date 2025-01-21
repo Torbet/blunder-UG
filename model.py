@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from xgboost import XGBClassifier
 
 torch.manual_seed(0)
 
@@ -31,3 +30,32 @@ class ConvLSTM(nn.Module):
     x = torch.cat([x, evals.unsqueeze(-1)], dim=-1)
     x, _ = self.lstm(x)
     return self.fc(x[:, -1])
+
+
+class Dense(nn.Module):
+  def __init__(self, input_dim: int, hidden: list[int]):
+    super().__init__()
+    layers = []
+    for h in hidden:
+      layers.append(nn.Linear(input_dim, h))
+      layers.append(nn.ReLU())
+      input_dim = h
+    layers.append(nn.Linear(input_dim, 4))
+    self.layers = nn.Sequential(*layers)
+
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    x = x.permute(0, 2, 1, 3, 4)
+    x = x.reshape(x.size(0), -1)
+    return self.layers(x)
+
+
+class Conv(nn.Module):
+  def __init__(self):
+    super().__init__()
+    self.conv1 = nn.Conv3d(6, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
+    self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
+
+  def forward(self, x: torch.Tensor) -> torch.Tensor:
+    x = x.permute(0, 2, 1, 3, 4)
+    x = F.relu(self.conv1(x))
+    return F.relu(self.conv2(x))
