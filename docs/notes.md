@@ -119,7 +119,7 @@ With transformer we can pad and mask the input, so we can utilise all games and 
 
 #### BCE Loss (20 epochs)
 
-![[assets/BCE-10000.png]]
+![[./assets/BCE-10000.png]]
 
 |                      | 1000 | 5000  | 10000 |
 | -------------------- | ---- | ----- | ----- |
@@ -141,7 +141,7 @@ With transformer we can pad and mask the input, so we can utilise all games and 
 
 #### Cross Entropy Loss (20 epochs)
 
-![[assets/Cross-Entropy-10000.png]]
+![[./assets/Cross-Entropy-10000.png]]
 
 |                                               | **1000** | 10000 |
 | --------------------------------------------- | -------- | ----- |
