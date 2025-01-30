@@ -20,6 +20,7 @@ num_moves = args.num_moves  # number of moves per game
 engine_prob = args.engine_prob  # probability of engine move
 channels = args.channels  # number of channels
 parse_board = parse_board_12 if channels == 12 else parse_board_6
+ratings = [1100, 1200, 1300, 1400, 1500, 1600, 1700, 1800, 1900]
 
 with open('data/misc/openings.tsv', 'r') as f:
   reader = csv.reader(f, delimiter='\t')
@@ -45,23 +46,24 @@ for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
         break
 
       r = np.random.rand()
+      rating = np.random.choice(ratings)
       move_label = int(r < engine_prob)
 
       match l:
         case 0:
-          move, label = maia_move(board), 0
+          move, label = maia_move(board, rating), 0
         case 1:
           if board.turn == chess.WHITE:
-            move, label = maia_move(board), 0
+            move, label = maia_move(board, rating), 0
           else:
-            move = stockfish_move(board) if r < engine_prob else maia_move(board)
+            move = stockfish_move(board) if r < engine_prob else maia_move(board, rating)
         case 2:
           if board.turn == chess.WHITE:
-            move = stockfish_move(board) if r < engine_prob else maia_move(board)
+            move = stockfish_move(board) if r < engine_prob else maia_move(board, rating)
           else:
             move, label = maia_move(board), 0
         case 3:
-          move = stockfish_move(board) if r < engine_prob else maia_move(board)
+          move = stockfish_move(board) if r < engine_prob else maia_move(board, rating)
 
       board.push(move)
       moves[4 * g + l, m] = parse_board(board)
