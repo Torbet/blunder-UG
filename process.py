@@ -3,7 +3,7 @@ import numpy as np
 import chess.pgn
 import os, shutil
 from tqdm import trange
-from utils import parse_board_12, parse_board_6, evaluate_board
+from utils import parse_board_12, parse_board_6, evaluate_board, parse_emt
 
 # suppress logging (variant: untimed)
 import logging
@@ -57,6 +57,14 @@ def filter_games(limit: int, years: list[int], elo: list[int]):
           continue
         if ply_count < num_moves + 20:
           continue
+        if 'HvH' in path and mode != 'HvH':
+          continue
+        if 'EvE' in path and mode != 'EvE':
+          continue
+        if 'HvE' in path and mode not in ['HvE', 'EvH']:
+          continue
+        if any(parse_emt(node) is None for node in game.mainline()):
+          continue
 
         games[mode].append(game)
         print('\r' + ' '.join(f'{mode}: {len(games[mode])}' for mode in games), end='')
@@ -95,7 +103,7 @@ def process_games(limit: int, num_moves: int, filtered_path: str, channels: int)
           if i >= 10:
             moves[l * limit + g, i - 10] = parse_board(board)
             evals[l * limit + g, i - 10] = evaluate_board(board)
-            times[l * limit + g, i - 10] = node.emt()
+            times[l * limit + g, i - 10] = parse_emt(node)
 
   shuffle = np.random.permutation(4 * limit)
   moves, evals, times, game_labels = moves[shuffle], evals[shuffle], times[shuffle], game_labels[shuffle]

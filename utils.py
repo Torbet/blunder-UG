@@ -120,3 +120,11 @@ def parse_board_6(board: chess.Board) -> np.ndarray:
       channel = piece.piece_type - 1
       b[channel, i // 8, i % 8] = sign
   return b
+
+
+def parse_emt(node: chess.pgn.ChildNode) -> float:
+  if emt := node.emt():
+    return emt
+  if comment := node.comment:
+    return float(comment.split(' ')[1][:-1])
+  return None
