@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
 import chess
+import chess.pgn
 from stockfish import Stockfish
 from lczero.backends import Backend, Weights, GameState
 import os
