@@ -7,7 +7,15 @@ torch.manual_seed(0)
 
 
 class Transformer(nn.Module):
-  def __init__(self, in_channels: int = 12, hidden_dim: int = 256, nhead: int = 8, num_layers: int = 6, dim_feedforward: int = 2048, dropout: float = 0.1):
+  def __init__(
+    self,
+    in_channels: int = 12,
+    hidden_dim: int = 256,
+    nhead: int = 8,
+    num_layers: int = 6,
+    dim_feedforward: int = 2048,
+    dropout: float = 0.1
+  ):
     super().__init__()
 
     d_model = hidden_dim * 3

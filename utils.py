@@ -124,7 +124,7 @@ def parse_board_6(board: chess.Board) -> np.ndarray:
 
 
 def parse_emt(node: chess.pgn.ChildNode) -> float:
-  if emt := node.emt():
+  if emt := node.emt() is not None:
     return emt
   if comment := node.comment:
     return float(comment.split(' ')[1][:-1])
