@@ -1,4 +1,4 @@
-window.onload = () => {
+const init = (fen) => {
   var moves = [];
   var preds = [];
   const chart = new Chart("chart", {
@@ -16,7 +16,7 @@ window.onload = () => {
     },
   });
 
-  var game = new Chess();
+  var game = new Chess(fen);
 
   const onDragStart = (source, piece, position, orientation) => {
     if (game.game_over()) return false;
@@ -47,7 +47,7 @@ window.onload = () => {
 
   const config = {
     draggable: true,
-    position: "start",
+    position: game.fen(),
     onDragStart,
     onDrop,
     onChange,

@@ -15,6 +15,7 @@ class Transformer(nn.Module):
     num_layers: int = 6,
     dim_feedforward: int = 2048,
     dropout: float = 0.1,
+    num_moves: int = 60,
     evals: bool = True,
     times: bool = True,
   ):
@@ -67,14 +68,14 @@ class Transformer(nn.Module):
         nn.ReLU(),
       )
 
-    self.positional_encoding = PositionalEncoding(d_model, dropout, max_len=40)
+    self.positional_encoding = PositionalEncoding(d_model, dropout, max_len=num_moves)
 
     encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, batch_first=True)
     self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers)
 
     self.classifier = nn.Sequential(nn.Linear(d_model, hidden_dim), nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden_dim, 4))
 
-  def forward(self, moves: torch.Tensor, evals: torch.Tensor, times: torch.Tensor) -> torch.Tensor:
+  def forward(self, moves: torch.Tensor, evals: torch.Tensor = None, times: torch.Tensor = None) -> torch.Tensor:
     BS, T, C, H, W = moves.shape
 
     moves = moves.permute(0, 2, 1, 3, 4)
@@ -162,12 +163,54 @@ class Dense(nn.Module):
 
 
 class Conv(nn.Module):
-  def __init__(self):
+  def __init__(self, channels: int = 12):
     super().__init__()
-    self.conv1 = nn.Conv3d(6, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
+    self.conv1 = nn.Conv3d(channels, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
     self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
 
   def forward(self, x: torch.Tensor) -> torch.Tensor:
     x = x.permute(0, 2, 1, 3, 4)
     x = F.relu(self.conv1(x))
     return F.relu(self.conv2(x))
+
+
+class Dense1(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    dim = 15360 * (channels // 6)
+    self.dense = Dense(dim, [512])
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    return self.dense(x)
+
+
+class Dense3(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    dim = 15360 * (channels // 6)
+    self.dense = Dense(dim, [512, 512, 64])
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    return self.dense(x)
+
+
+class Dense6(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    dim = 15360 * (channels // 6)
+    self.dense = Dense(dim, [2048, 2048, 512, 512, 128, 128])
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    return self.dense(x)
+
+
+class Conv1(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    self.conv = Conv(channels)
+    self.dense = Dense1()
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    x = self.conv(x)
+    x = x.reshape(x.size(0), -1)
+    return self.dense(x)

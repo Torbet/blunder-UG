@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from utils import SyntheticDataset, ProcessedDataset, split_data
-from model import ConvLSTM
+from model import ConvLSTM, Transformer, Dense1, Dense3, Dense6
 
 np.random.seed(0)
 torch.manual_seed(0)
@@ -33,7 +33,7 @@ def train(model: nn.Module, loader: DataLoader, optimizer: optim.Optimizer) -> t
     loss = F.cross_entropy(output, game_labels, label_smoothing=0.1)
     loss.backward()
     optimizer.step()
-    t.set_description(f'Loss: {loss.item():.2f}')
+    t.set_description(f'Loss: {loss.item():.4f}')
   return evaluate(model, loader)
 
 
@@ -51,28 +51,30 @@ def evaluate(model: nn.Module, loader: DataLoader) -> tuple[float, float]:
 
 if __name__ == '__main__':
   device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-  model = ConvLSTM().to(device)
+  model = Transformer(times=False).to(device)
+  name = model.__class__.__name__
+  print(f'Model: {name}')
   dataset = SyntheticDataset(args.limit, args.num_moves, args.engine_prob, device)
-  # dataset = ProcessedDataset(args.limit, args.num_moves, 12, device)
+  # dataset = ProcessedDataset(args.limit, args.num_moves, 6, device)
   train_loader, val_loader, test_loader = split_data(dataset, args.batch_size)
-  optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-4)
-  scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
+  optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=1e-4)
+  sheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
   results = {}
   for epoch in range(args.epochs):
     train_loss, train_accuracy = train(model, train_loader, optimizer)
-    scheduler.step()
+    # scheduler.step()
     val_loss, val_accuracy = evaluate(model, val_loader)
     print(
-      f'Epoch {epoch + 1}/{args.epochs}, Train Loss: {train_loss:.2f}, Train Accuracy: {train_accuracy:.2f}, Val Loss: {val_loss:.2f}, Val Accuracy: {val_accuracy:.2f}'
+      f'Epoch {epoch + 1}/{args.epochs}, Train Loss: {train_loss:.4f}, Train Accuracy: {train_accuracy:.4f}, Val Loss: {val_loss:.4f}, Val Accuracy: {val_accuracy:.4f}'
     )
     results[epoch] = (train_loss, train_accuracy, val_loss, val_accuracy)
 
   test_loss, accuracy = evaluate(model, test_loader)
-  print(f'Test Loss: {test_loss:.2f}, Test Accuracy: {accuracy:.2f}')
+  print(f'Test Loss: {test_loss:.4f}, Test Accuracy: {accuracy:.4f}')
 
   if args.save:
-    name = f'{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.epochs}'
+    name = f'{name}_{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.epochs}'
     torch.save(model.state_dict(), f'results/weights/{name}.pt')
     plt.plot(list(results.keys()), [r[0] for r in results.values()], label='Train Loss')
     plt.plot(list(results.keys()), [r[1] for r in results.values()], label='Train Accuracy')
