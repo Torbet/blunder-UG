@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import torch
 import torch.nn.functional as F
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import chess
 import csv
 from model import ConvLSTM, Transformer
@@ -34,15 +34,20 @@ evals = torch.zeros(60, dtype=torch.float32)
 preds = torch.zeros((60, 4), dtype=torch.float32)
 
 app = Flask(__name__, static_folder='web/static', template_folder='web/templates')
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
+# app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
 
 
 @app.route('/')
 def index():
+  return render_template('index.html')
+
+
+@app.route('/play')
+def play():
   board = chess.Board(openings[np.random.randint(len(openings))])
   while board.turn != chess.WHITE:
     board = chess.Board(openings[np.random.randint(len(openings))])
-  return render_template('index.html', fen=board.fen())
+  return render_template('play.html', fen=board.fen())
 
 
 @app.route('/img/<path:path>')
@@ -53,8 +58,9 @@ def img(path):
 
 @app.route('/maia/<path:fen>')
 def maia(fen):
+  rating = request.args.get('rating', default=1200, type=int)
   board = chess.Board(fen)
-  board.push(maia_move(board))
+  board.push(maia_move(board, rating))
   return board.fen()
 
 

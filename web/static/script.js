@@ -1,4 +1,7 @@
 const init = (fen) => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const rating = urlParams.get("rating") || 1200;
+
   var moves = [];
   var preds = [];
   const chart = new Chart("chart", {
@@ -38,7 +41,7 @@ const init = (fen) => {
     chart.update();
     if (game.game_over()) alert("Game Over");
     if (game.turn() == "b") {
-      const response = await fetch(`/maia/${game.fen()}`);
+      const response = await fetch(`/maia/${game.fen()}?rating=${rating}`);
       const fen = await response.text();
       game.load(fen);
       board.position(game.fen());
