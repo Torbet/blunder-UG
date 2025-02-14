@@ -8,6 +8,8 @@ import torch.nn as nn
 from model import ConvLSTM, Dense
 import numpy as np
 
+torch.manual_seed(0)
+np.random.seed(0)
 
 class TestModels(unittest.TestCase):
   def setUp(self):
