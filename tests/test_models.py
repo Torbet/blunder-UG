@@ -11,6 +11,7 @@ import numpy as np
 torch.manual_seed(0)
 np.random.seed(0)
 
+
 class TestModels(unittest.TestCase):
   def setUp(self):
     self.batch_size = 4
