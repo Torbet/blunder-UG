@@ -131,7 +131,7 @@ class ConvLSTM(nn.Module):
     # self.fc = nn.Sequential(nn.Linear(1024, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4))
     self.fc = nn.Linear(512, 4)
 
-  def forward(self, moves: torch.Tensor, evals: torch.Tensor, times: torch.Tensor) -> torch.Tensor:
+  def forward(self, moves: torch.Tensor, evals: torch.Tensor = None, times: torch.Tensor = None) -> torch.Tensor:
     BS, T, C, H, W = moves.shape
     x = moves.view(BS * T, C, H, W)
     x = F.relu(self.conv1(x))

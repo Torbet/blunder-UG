@@ -61,7 +61,7 @@ class TestModels(unittest.TestCase):
   def test_model_training_step(self):
     """Test single training step for each model"""
     # Test ConvLSTM
-    model = ConvLSTM().to(self.device)
+    model = ConvLSTM(times=False).to(self.device)
     optimizer = torch.optim.Adam(model.parameters())
     optimizer.zero_grad()
     output = model(self.moves_12, self.evals)
@@ -82,7 +82,7 @@ class TestModels(unittest.TestCase):
 
   def test_convlstm_bidirectional(self):
     """Test bidirectional LSTM behavior"""
-    model = ConvLSTM().to(self.device)
+    model = ConvLSTM(times=False).to(self.device)
 
     forward_moves = self.moves_12
     backward_moves = torch.flip(self.moves_12, [1])
@@ -93,7 +93,7 @@ class TestModels(unittest.TestCase):
 
   def test_model_regularization(self):
     """Test dropout and batch normalization behavior"""
-    model = ConvLSTM().to(self.device)
+    model = ConvLSTM(times=False).to(self.device)
 
     model.train()
     train_output1 = model(self.moves_12, self.evals)

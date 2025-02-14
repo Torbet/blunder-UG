@@ -84,15 +84,8 @@ def stockfish_move(board: chess.Board) -> chess.Move:
 
 
 maias = {
-  1100: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1100.pb.gz'))),
-  1200: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1200.pb.gz'))),
-  1300: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1300.pb.gz'))),
-  1400: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1400.pb.gz'))),
-  1500: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1500.pb.gz'))),
-  1600: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1600.pb.gz'))),
-  1700: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1700.pb.gz'))),
-  1800: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1800.pb.gz'))),
-  1900: Backend(Weights(os.path.join(os.path.dirname(__file__), 'data/maia/1900.pb.gz'))),
+  rating: Backend(Weights(os.path.join(os.path.dirname(__file__), f'data/maia/{rating}.pb.gz')), options='logfile=false')
+  for rating in range(1100, 2000, 100)
 }
 
 
