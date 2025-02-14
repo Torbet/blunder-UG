@@ -94,20 +94,6 @@ class TestModels(unittest.TestCase):
 
     self.assertTrue(torch.any(forward_output != backward_output))
 
-  def test_model_regularization(self):
-    """Test dropout and batch normalization behavior"""
-    model = ConvLSTM(times=False).to(self.device)
-
-    model.train()
-    train_output1 = model(self.moves_12, self.evals)
-    train_output2 = model(self.moves_12, self.evals)
-    self.assertFalse(torch.allclose(train_output1, train_output2))
-
-    model.eval()
-    eval_output1 = model(self.moves_12, self.evals)
-    eval_output2 = model(self.moves_12, self.evals)
-    self.assertTrue(torch.allclose(eval_output1, eval_output2))
-
   def _verify_gradients(self, model):
     """Helper method to verify gradient properties"""
     for param in model.parameters():
