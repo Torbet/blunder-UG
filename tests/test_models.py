@@ -29,7 +29,7 @@ class TestModels(unittest.TestCase):
 
   def test_convlstm_architecture(self):
     """Test ConvLSTM model architecture and output shape"""
-    model = ConvLSTM().to(self.device)
+    model = ConvLSTM(times=False).to(self.device)
     output = model(self.moves_12, self.evals)
 
     self.assertEqual(output.shape, (self.batch_size, 4))
