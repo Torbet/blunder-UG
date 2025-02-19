@@ -97,7 +97,6 @@ def move(fen):
     con = sqlite3.connect('web/games.db')
     cur = con.cursor()
     cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', (fens_str, labels_str))
-    print(fens_str, labels_str)
     con.commit()
     con.close()
     return 'Game over'
