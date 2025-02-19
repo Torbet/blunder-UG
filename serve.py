@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from flask import Flask, render_template, request
 import chess
 import csv
+import sqlite3
 from model import ConvLSTM, Transformer
 from utils import maia_move, stockfish_move, parse_board_12, evaluate_board
 
@@ -27,6 +28,14 @@ model = Transformer(times=False)
 weights = f'results/weights/Transformer_{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.epochs}.pt'
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
+
+con = sqlite3.connect('web/games.db')
+cur = con.cursor()
+cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
+con.commit()
+con.close()
+
+fens, labels = [], []
 
 total_moves = 0
 moves = torch.zeros((60, 12, 8, 8), dtype=torch.float32)
@@ -58,6 +67,8 @@ def img(path):
 
 @app.route('/maia/<path:fen>')
 def maia(fen):
+  global labels
+  labels.append(0)
   rating = request.args.get('rating', default=1200, type=int)
   board = chess.Board(fen)
   board.push(maia_move(board, rating))
@@ -66,6 +77,8 @@ def maia(fen):
 
 @app.route('/stockfish/<path:fen>')
 def stockfish(fen):
+  global labels
+  labels.append(1)
   board = chess.Board(fen)
   board.push(stockfish_move(board))
   return board.fen()
@@ -73,8 +86,21 @@ def stockfish(fen):
 
 @app.route('/move/<path:fen>')
 def move(fen):
-  global total_moves
+  global total_moves, fens, labels
+  fens.append(fen)
+  if len(labels) < len(fens):
+    labels.append(0)
   board = chess.Board(fen)
+  if board.is_game_over():
+    fens_str = '_'.join(fens)
+    labels_str = '_'.join(map(str, labels))
+    con = sqlite3.connect('web/games.db')
+    cur = con.cursor()
+    cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', (fens_str, labels_str))
+    print(fens_str, labels_str)
+    con.commit()
+    con.close()
+    return 'Game over'
   moves[total_moves] = torch.tensor(parse_board_12(board))
   evals[total_moves] = torch.tensor(evaluate_board(board))
   preds[total_moves] = F.softmax(model(moves.unsqueeze(0), evals.unsqueeze(0))[0], dim=0)

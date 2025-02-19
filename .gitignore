@@ -1,6 +1,7 @@
 .vscode
 .DS_Store
 .ruff_cache
+web/games.db
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
