@@ -1,8 +1,8 @@
 import argparse
-import numpy as np
+import random
 import torch
 import torch.nn.functional as F
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session
 import chess
 import csv
 import sqlite3
@@ -29,20 +29,18 @@ weights = f'results/weights/Transformer_{args.limit}_{args.num_moves}_{args.engi
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 
-con = sqlite3.connect('web/games.db')
-cur = con.cursor()
-cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
-con.commit()
-con.close()
 
-fens, labels = [], []
+def store_data(fens, labels):
+  con = sqlite3.connect('web/games.db')
+  cur = con.cursor()
+  cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
+  cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', ('_'.join(fens), '_'.join(map(str, labels))))
+  con.commit()
+  con.close()
 
-total_moves = 0
-moves = torch.zeros((60, 12, 8, 8), dtype=torch.float32)
-evals = torch.zeros(60, dtype=torch.float32)
-preds = torch.zeros((60, 4), dtype=torch.float32)
 
 app = Flask(__name__, static_folder='web/static', template_folder='web/templates')
+app.secret_key = 'super secret key'
 # app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
 
 
@@ -53,9 +51,11 @@ def index():
 
 @app.route('/play')
 def play():
-  board = chess.Board(openings[np.random.randint(len(openings))])
+  board = chess.Board(openings[random.randint(0, len(openings) - 1)])
   while board.turn != chess.WHITE:
-    board = chess.Board(openings[np.random.randint(len(openings))])
+    board = chess.Board(openings[random.randint(0, len(openings) - 1)])
+  session['fens'] = [board.fen()]
+  session['labels'] = [0]
   return render_template('play.html', fen=board.fen())
 
 
@@ -67,18 +67,17 @@ def img(path):
 
 @app.route('/maia/<path:fen>')
 def maia(fen):
-  global labels
-  labels.append(0)
-  rating = request.args.get('rating', default=1200, type=int)
   board = chess.Board(fen)
-  board.push(maia_move(board, rating))
+  if board.is_game_over():
+    return 'Game Over'
+  session['labels'].append(0)
+  board.push(maia_move(board, request.args.get('rating', default=1200, type=int)))
   return board.fen()
 
 
 @app.route('/stockfish/<path:fen>')
 def stockfish(fen):
-  global labels
-  labels.append(1)
+  session['labels'].append(1)
   board = chess.Board(fen)
   board.push(stockfish_move(board))
   return board.fen()
@@ -86,25 +85,15 @@ def stockfish(fen):
 
 @app.route('/move/<path:fen>')
 def move(fen):
-  global total_moves, fens, labels
-  fens.append(fen)
-  if len(labels) < len(fens):
-    labels.append(0)
   board = chess.Board(fen)
+  session['fens'].append(board.fen())
+  if len(session['fens']) > len(session['labels']):
+    session['labels'].append(0)
   if board.is_game_over():
-    fens_str = '_'.join(fens)
-    labels_str = '_'.join(map(str, labels))
-    con = sqlite3.connect('web/games.db')
-    cur = con.cursor()
-    cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', (fens_str, labels_str))
-    con.commit()
-    con.close()
-    return 'Game over'
-  moves[total_moves] = torch.tensor(parse_board_12(board))
-  evals[total_moves] = torch.tensor(evaluate_board(board))
-  preds[total_moves] = F.softmax(model(moves.unsqueeze(0), evals.unsqueeze(0))[0], dim=0)
-  total_moves += 1
-  return str(preds[total_moves - 1, 2].item())
+    store_data(session['fens'], session['labels'])
+    print('Game Over')
+    return 'Game Over'
+  return str(evaluate_board(board))
 
 
 if __name__ == '__main__':

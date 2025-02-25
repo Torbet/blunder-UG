@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import math
 
 torch.manual_seed(0)
+torch.cuda.manual_seed(0)
 
 
 class Transformer(nn.Module):
@@ -146,71 +147,124 @@ class ConvLSTM(nn.Module):
     return self.fc(x[:, -1])
 
 
-class Dense(nn.Module):
-  def __init__(self, input_dim: int, hidden: list[int]):
-    super().__init__()
-    layers = []
-    for h in hidden:
-      layers.append(nn.Linear(input_dim, h))
-      layers.append(nn.ReLU())
-      input_dim = h
-    layers.append(nn.Linear(input_dim, 4))
-    self.layers = nn.Sequential(*layers)
-
-  def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = x.reshape(x.size(0), -1)
-    return self.layers(x)
-
-
-class Conv(nn.Module):
-  def __init__(self, channels: int = 12):
-    super().__init__()
-    self.conv1 = nn.Conv3d(channels, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
-    self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
-
-  def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = x.permute(0, 2, 1, 3, 4)
-    x = F.relu(self.conv1(x))
-    return F.relu(self.conv2(x))
-
-
 class Dense1(nn.Module):
   def __init__(self, channels: int = 12):
     super().__init__()
-    dim = 15360 * (channels // 6)
-    self.dense = Dense(dim, [512])
+    in_dim = 15360 * (channels // 6)
+    self.l1 = nn.Linear(in_dim, 512)
+    self.l2 = nn.Linear(512, 4)
 
   def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
-    return self.dense(x)
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    return self.l2(x)
 
 
 class Dense3(nn.Module):
   def __init__(self, channels: int = 12):
     super().__init__()
-    dim = 15360 * (channels // 6)
-    self.dense = Dense(dim, [512, 512, 64])
+    in_dim = 15360 * (channels // 6)
+    # hiden layers: 512, 512, 64
+    self.l1 = nn.Linear(in_dim, 512)
+    self.l2 = nn.Linear(512, 512)
+    self.l3 = nn.Linear(512, 64)
+    self.l4 = nn.Linear(64, 4)
 
   def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
-    return self.dense(x)
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    x = F.relu(self.l2(x))
+    x = F.relu(self.l3(x))
+    return self.l4(x)
 
 
 class Dense6(nn.Module):
   def __init__(self, channels: int = 12):
     super().__init__()
-    dim = 15360 * (channels // 6)
-    self.dense = Dense(dim, [2048, 2048, 512, 512, 128, 128])
+    in_dim = 15360 * (channels // 6)
+    # hidden layers: 2048, 2048, 512, 512, 128, 128
+    self.l1 = nn.Linear(in_dim, 2048)
+    self.l2 = nn.Linear(2048, 2048)
+    self.l3 = nn.Linear(2048, 512)
+    self.l4 = nn.Linear(512, 512)
+    self.l5 = nn.Linear(512, 128)
+    self.l6 = nn.Linear(128, 128)
+    self.l7 = nn.Linear(128, 4)
 
   def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
-    return self.dense(x)
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    x = F.relu(self.l2(x))
+    x = F.relu(self.l3(x))
+    x = F.relu(self.l4(x))
+    x = F.relu(self.l5(x))
+    x = F.relu(self.l6(x))
+    return self.l7(x)
 
 
 class Conv1(nn.Module):
   def __init__(self, channels: int = 12):
     super().__init__()
-    self.conv = Conv(channels)
-    self.dense = Dense1()
+    self.conv1 = nn.Conv3d(channels, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
+    self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
+    in_dim = 16384 * (channels // 6)
+    self.l1 = nn.Linear(in_dim, 512)
+    self.l2 = nn.Linear(512, 4)
 
   def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
-    x = self.conv(x)
-    x = x.reshape(x.size(0), -1)
-    return self.dense(x)
+    x = x.permute(0, 2, 1, 3, 4)
+    x = F.relu(self.conv1(x))
+    x = F.relu(self.conv2(x))
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    return self.l2(x)
+
+
+class Conv3(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    self.conv1 = nn.Conv3d(channels, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
+    self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
+    in_dim = 16384 * (channels // 6)
+    self.l1 = nn.Linear(in_dim, 512)
+    self.l2 = nn.Linear(512, 512)
+    self.l3 = nn.Linear(512, 64)
+    self.l4 = nn.Linear(64, 4)
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    x = x.permute(0, 2, 1, 3, 4)
+    x = F.relu(self.conv1(x))
+    x = F.relu(self.conv2(x))
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    x = F.relu(self.l2(x))
+    x = F.relu(self.l3(x))
+    return self.l4(x)
+
+
+class Conv6(nn.Module):
+  def __init__(self, channels: int = 12):
+    super().__init__()
+    self.conv1 = nn.Conv3d(channels, 64, kernel_size=(5, 3, 3), stride=(2, 1, 1))
+    self.conv2 = nn.Conv3d(64, 128, kernel_size=(3, 3, 3), stride=(2, 1, 1))
+    in_dim = 16384 * (channels // 6)
+    self.l1 = nn.Linear(in_dim, 2048)
+    self.l2 = nn.Linear(2048, 2048)
+    self.l3 = nn.Linear(2048, 512)
+    self.l4 = nn.Linear(512, 512)
+    self.l5 = nn.Linear(512, 128)
+    self.l6 = nn.Linear(128, 128)
+    self.l7 = nn.Linear(128, 4)
+
+  def forward(self, x: torch.Tensor, *_) -> torch.Tensor:
+    x = x.permute(0, 2, 1, 3, 4)
+    x = F.relu(self.conv1(x))
+    x = F.relu(self.conv2(x))
+    x = x.view(x.size(0), -1)
+    x = F.relu(self.l1(x))
+    x = F.relu(self.l2(x))
+    x = F.relu(self.l3(x))
+    x = F.relu(self.l4(x))
+    x = F.relu(self.l5(x))
+    x = F.relu(self.l6(x))
+    return self.l7(x)

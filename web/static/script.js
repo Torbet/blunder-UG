@@ -2,23 +2,6 @@ const init = (fen) => {
   const urlParams = new URLSearchParams(window.location.search);
   const rating = urlParams.get("rating") || 1200;
 
-  var moves = [];
-  var preds = [];
-  const chart = new Chart("chart", {
-    type: "line",
-    data: {
-      labels: moves,
-      datasets: [
-        {
-          label: "Predictions",
-          data: preds,
-          borderColor: "rgb(255, 99, 132)",
-          tension: 0.4,
-        },
-      ],
-    },
-  });
-
   var game = new Chess(fen);
 
   const onDragStart = (source, piece, position, orientation) => {
@@ -33,12 +16,9 @@ const init = (fen) => {
   };
 
   const onChange = async () => {
-    moves.push(moves.length + 1);
-    const fen = game.fen();
-    var pred = await fetch(`/move/${fen}`);
-    pred = await pred.text();
-    preds.push(parseFloat(pred));
-    chart.update();
+    const response = await fetch(`/move/${game.fen()}`);
+    const evaluation = parseFloat(await response.text());
+    console.log(evaluation);
     if (game.game_over()) alert("Game Over");
     if (game.turn() == "b") {
       const response = await fetch(`/maia/${game.fen()}?rating=${rating}`);

@@ -9,6 +9,7 @@ import os
 
 np.random.seed(0)
 torch.manual_seed(0)
+torch.cuda.manual_seed(0)
 
 
 class SyntheticDataset(Dataset):
@@ -73,8 +74,8 @@ def evaluate_board(board: chess.Board) -> float:
   stockfish.set_fen_position(board.fen())
   evaluation = stockfish.get_evaluation()
   if evaluation['type'] == 'mate':
-    return 1000 if evaluation['value'] > 0 else -1000
-  return evaluation['value']
+    return 1 / ((2 * evaluation['value']) + 1) * 1000
+  return evaluation['value'] / 100
 
 
 def stockfish_move(board: chess.Board) -> chess.Move:
