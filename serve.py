@@ -40,6 +40,7 @@ cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT
 con.commit()
 con.close()
 
+
 def store_data(fens, labels):
   print(fens, labels)
   con = sqlite3.connect('web/games.db')
