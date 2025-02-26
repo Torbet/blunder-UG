@@ -19,6 +19,7 @@ const init = (fen) => {
     const response = await fetch(`/move/${game.fen()}`);
     const evaluation = parseFloat(await response.text());
     console.log(evaluation);
+    $("#cheat").prop("disabled", evaluation > 0);
     if (game.game_over()) alert("Game Over");
     if (game.turn() == "b") {
       const response = await fetch(`/maia/${game.fen()}?rating=${rating}`);

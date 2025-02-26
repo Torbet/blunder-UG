@@ -23,6 +23,11 @@ button {
   width: 100%;
 }
 
+#cheat:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
 #chart {
   width: 100%;
 }

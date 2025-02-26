@@ -1,7 +1,8 @@
 import argparse
 import random
-import torch
-import torch.nn.functional as F
+
+# import torch
+# import torch.nn.functional as F
 from flask import Flask, render_template, request, session
 import chess
 import csv
@@ -24,10 +25,12 @@ with open('data/misc/openings.tsv', 'r') as f:
   reader = csv.reader(f, delimiter='\t')
   openings = [l[4] for l in reader if 5 <= len(l[3].split(' ')) <= 10]
 
+"""
 model = Transformer(times=False)
 weights = f'results/weights/Transformer_{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.epochs}.pt'
 model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
+"""
 
 
 def store_data(fens, labels):
@@ -92,7 +95,7 @@ def move(fen):
   if board.is_game_over():
     store_data(session['fens'], session['labels'])
     print('Game Over')
-    return 'Game Over'
+    return '0'
   return str(evaluate_board(board))
 
 
