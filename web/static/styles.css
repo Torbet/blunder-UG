@@ -10,6 +10,12 @@ body {
   margin: 0 auto;
 }
 
+h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 button {
   padding: 10px;
   border: none;
