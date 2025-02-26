@@ -7,6 +7,7 @@ from flask import Flask, render_template, request, session
 import chess
 import csv
 import sqlite3
+import os
 from model import ConvLSTM, Transformer
 from utils import maia_move, stockfish_move, parse_board_12, evaluate_board
 
@@ -100,4 +101,12 @@ def move(fen):
 
 
 if __name__ == '__main__':
-  app.run(host='0.0.0.0', debug=True)
+  ssl_path = '/etc/letsencrypt/live/chess.torbet.co'
+  if os.path.exists(ssl_path):
+    app.run(
+      host='0.0.0.0',
+      port=443,
+      ssl_context=(f'{ssl_path}/fullchain.pem', f'{ssl_path}/privkey.pem'),
+    )
+  else:
+    app.run(host='0.0.0.0', debug=True)
