@@ -36,23 +36,23 @@ model.eval()
 # init db
 con = sqlite3.connect('web/games.db')
 cur = con.cursor()
-cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
+cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, elo INTEGER, fens TEXT, labels TEXT)')
 con.commit()
 con.close()
 
 
-def store_data(fens, labels):
+def store_data(elo, fens, labels):
   print(fens, labels)
   con = sqlite3.connect('web/games.db')
   cur = con.cursor()
-  cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', ('_'.join(fens), '_'.join(map(str, labels))))
+  cur.execute('INSERT INTO games (elo, fens, labels) VALUES (?, ?, ?)', (elo, '_'.join(fens), '_'.join(map(str, labels))))
   con.commit()
   con.close()
 
 
 app = Flask(__name__, static_folder='web/static', template_folder='web/templates')
 app.secret_key = 'super secret key'
-# app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
 
 
 @app.route('/')
@@ -112,7 +112,7 @@ def move(fen):
     labels.append(0)
     session['labels'] = labels
   if board.is_game_over():
-    store_data(session['fens'], session['labels'])
+    store_data(request.args.get('elo', default=1200, type=int), session['fens'], session['labels'])
     print('Game Over')
     return '0'
   return str(evaluate_board(board))
