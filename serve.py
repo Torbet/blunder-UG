@@ -33,11 +33,17 @@ model.load_state_dict(torch.load(weights, weights_only=True))
 model.eval()
 """
 
+# init db
+con = sqlite3.connect('web/games.db')
+cur = con.cursor()
+cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
+con.commit()
+con.close()
 
 def store_data(fens, labels):
+  print(fens, labels)
   con = sqlite3.connect('web/games.db')
   cur = con.cursor()
-  cur.execute('CREATE TABLE IF NOT EXISTS games (id INTEGER PRIMARY KEY, fens TEXT, labels TEXT)')
   cur.execute('INSERT INTO games (fens, labels) VALUES (?, ?)', ('_'.join(fens), '_'.join(map(str, labels))))
   con.commit()
   con.close()
