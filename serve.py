@@ -71,17 +71,21 @@ def img(path):
 
 @app.route('/maia/<path:fen>')
 def maia(fen):
+  labels = session['labels']
+  labels.append(0)
+  session['labels'] = labels
   board = chess.Board(fen)
   if board.is_game_over():
     return 'Game Over'
-  session['labels'].append(0)
   board.push(maia_move(board, request.args.get('rating', default=1200, type=int)))
   return board.fen()
 
 
 @app.route('/stockfish/<path:fen>')
 def stockfish(fen):
-  session['labels'].append(1)
+  labels = session['labels']
+  labels.append(1)
+  session['labels'] = labels
   board = chess.Board(fen)
   board.push(stockfish_move(board))
   return board.fen()
@@ -89,10 +93,17 @@ def stockfish(fen):
 
 @app.route('/move/<path:fen>')
 def move(fen):
+  print(session)
   board = chess.Board(fen)
-  session['fens'].append(board.fen())
+  # add fen
+  fens = session['fens']
+  fens.append(board.fen())
+  session['fens'] = fens
+
   if len(session['fens']) > len(session['labels']):
-    session['labels'].append(0)
+    labels = session['labels']
+    labels.append(0)
+    session['labels'] = labels
   if board.is_game_over():
     store_data(session['fens'], session['labels'])
     print('Game Over')
