@@ -16,7 +16,7 @@ const init = (fen) => {
   };
 
   const onChange = async () => {
-    const response = await fetch(`/move/${game.fen()}`);
+    const response = await fetch(`/move/${game.fen()}?rating=${rating}`);
     const evaluation = parseFloat(await response.text());
     console.log(evaluation);
     $("#cheat").prop("disabled", evaluation > 0);

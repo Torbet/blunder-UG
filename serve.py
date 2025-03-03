@@ -19,7 +19,7 @@ parser.add_argument('--batch-size', type=int, default=64)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--epochs', type=int, default=20)
 parser.add_argument('--save', action=argparse.BooleanOptionalAction, default=False)
-args = parser.parse_args()
+args, uk = parser.parse_known_args()
 print(' '.join(f'{k}={v}' for k, v in vars(args).items()))
 
 with open('data/misc/openings.tsv', 'r') as f:
@@ -100,7 +100,6 @@ def stockfish(fen):
 
 @app.route('/move/<path:fen>')
 def move(fen):
-  print(session)
   board = chess.Board(fen)
   # add fen
   fens = session['fens']
@@ -123,6 +122,7 @@ if __name__ == '__main__':
   if os.path.exists(ssl_path):
     app.run(
       host='0.0.0.0',
+      threaded=True,
       port=443,
       ssl_context=(f'{ssl_path}/fullchain.pem', f'{ssl_path}/privkey.pem'),
     )
