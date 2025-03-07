@@ -28,8 +28,27 @@ with open('data/misc/openings.tsv', 'r') as f:
 
 moves = np.zeros((4 * limit, num_moves, channels, 8, 8), dtype=int)
 evals = np.zeros((4 * limit, num_moves), dtype=float)
+times = np.zeros((4 * limit, num_moves), dtype=float)
 move_labels = np.zeros((4 * limit, num_moves), dtype=int)
 game_labels = np.zeros(4 * limit, dtype=int)
+
+
+def generate_move_times(evals: np.ndarray, move_labels: np.ndarray) -> np.ndarray:
+  diffs = np.abs(np.concatenate(([evals[0] - 0], np.diff(evals))))
+  base_time = 1.0
+
+  engine_scaling = 0.1
+  human_scaling = 0.05
+  scaling_factors = np.where(move_labels == 1, engine_scaling, human_scaling)
+
+  raw_times = base_time + scaling_factors * diffs
+  noise = np.random.lognormal(mean=0, sigma=0.1, size=raw_times.shape)
+  move_times = raw_times * noise
+
+  move_times = np.clip(move_times, 0.5, 10.0)
+
+  return move_times
+
 
 for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
   """
@@ -39,7 +58,8 @@ for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
     3: stockfish vs stockfish
   """
   for g in (t := trange(limit)):
-    game_labels[4 * g + l] = l
+    idx = 4 * g + l
+    game_labels[idx] = l
     board = chess.Board(openings[np.random.randint(len(openings))])
     for m in range(num_moves):
       if board.is_game_over():
@@ -66,15 +86,16 @@ for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
           move = stockfish_move(board) if r < engine_prob else maia_move(board, rating)
 
       board.push(move)
-      moves[4 * g + l, m] = parse_board(board)
-      evals[4 * g + l, m] = evaluate_board(board)
-      move_labels[4 * g + l, m] = move_label
+      moves[idx, m] = parse_board(board)
+      evals[idx, m] = evaluate_board(board)
+      move_labels[idx, m] = move_label
 
+    times[idx] = generate_move_times(evals[idx], move_labels[idx])
     t.set_description(c)
 
 shuffle = np.random.permutation(4 * limit)
-moves, evals, move_labels, game_labels = moves[shuffle], evals[shuffle], move_labels[shuffle], game_labels[shuffle]
+moves, evals, times, move_labels, game_labels = moves[shuffle], evals[shuffle], times[shuffle], move_labels[shuffle], game_labels[shuffle]
 
 output_path = f'data/generated/{limit}_{num_moves}_{engine_prob}.npz'
-np.savez_compressed(output_path, moves=moves, evals=evals, move_labels=move_labels, game_labels=game_labels)
+np.savez_compressed(output_path, moves=moves, evals=evals, times=times, move_labels=move_labels, game_labels=game_labels)
 print(f'Data saved to {output_path}')
