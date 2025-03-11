@@ -74,8 +74,8 @@ def evaluate_board(board: chess.Board) -> float:
   stockfish.set_fen_position(board.fen())
   evaluation = stockfish.get_evaluation()
   if evaluation['type'] == 'mate':
-    return 1 / ((2 * evaluation['value']) + 1) * 1000
-  return evaluation['value'] / 100
+    return 10000 if evaluation['value'] > 0 else -10000
+  return evaluation['value']
 
 
 def stockfish_move(board: chess.Board) -> chess.Move:

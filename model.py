@@ -10,7 +10,7 @@ torch.cuda.manual_seed(0)
 class Transformer(nn.Module):
   def __init__(
     self,
-    in_channels: int = 12,
+    channels: int = 12,
     hidden_dim: int = 256,
     nhead: int = 8,
     num_layers: int = 6,
@@ -28,7 +28,7 @@ class Transformer(nn.Module):
     d_model = hidden_dim * (1 + evals + times)
 
     self.move_encoder = nn.Sequential(
-      nn.Conv3d(in_channels, 32, kernel_size=(3, 3, 3), padding=(1, 1, 1)),
+      nn.Conv3d(channels, 32, kernel_size=(3, 3, 3), padding=(1, 1, 1)),
       nn.BatchNorm3d(32),
       nn.ReLU(),
       nn.MaxPool3d(kernel_size=(2, 2, 2), stride=(2, 2, 2)),
@@ -41,7 +41,6 @@ class Transformer(nn.Module):
       nn.ReLU(),
     )
 
-    # TODO: Experiment with MaxPool1d
     if self.evals:
       self.eval_encoder = nn.Sequential(
         nn.Conv1d(1, 32, kernel_size=3, padding=1),
@@ -55,7 +54,6 @@ class Transformer(nn.Module):
         nn.ReLU(),
       )
 
-    # TODO: Experiment with MaxPool1d
     if self.times:
       self.time_encoder = nn.Sequential(
         nn.Conv1d(1, 32, kernel_size=3, padding=1),
@@ -119,16 +117,16 @@ class PositionalEncoding(nn.Module):
 
 
 class ConvLSTM(nn.Module):
-  def __init__(self, in_channels: int = 12, evals: bool = True, times: bool = True):
+  def __init__(self, channels: int = 12, evals: bool = True, times: bool = True):
     super().__init__()
     self.evals = evals
     self.times = times
 
-    self.conv1 = nn.Conv2d(in_channels, 64, 3)
+    self.conv1 = nn.Conv2d(channels, 64, 3)
     self.conv2 = nn.Conv2d(64, 128, 3)
     self.conv3 = nn.Conv2d(128, 256, 3)
     dim = 1024 + evals + times
-    self.lstm = nn.LSTM(dim, 256, batch_first=True, bidirectional=True)
+    self.lstm = nn.LSTM(dim, 256, num_layers=2, batch_first=True, bidirectional=True)
     # self.fc = nn.Sequential(nn.Linear(1024, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4))
     self.fc = nn.Linear(512, 4)
 
