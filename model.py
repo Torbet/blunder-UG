@@ -21,12 +21,13 @@ class Transformer(nn.Module):
     times: bool = True,
   ):
     super().__init__()
-
     self.evals = evals
     self.times = times
 
-    d_model = hidden_dim * (1 + evals + times)
+    # d_model is computed as hidden_dim multiplied by number of modalities
+    d_model = hidden_dim * (1 + int(evals) + int(times))
 
+    # Move encoder: processes 3D (spatial + temporal) move data.
     self.move_encoder = nn.Sequential(
       nn.Conv3d(channels, 32, kernel_size=(3, 3, 3), padding=(1, 1, 1)),
       nn.BatchNorm3d(32),
@@ -41,6 +42,7 @@ class Transformer(nn.Module):
       nn.ReLU(),
     )
 
+    # Evaluation encoder: processes per-move evaluation values.
     if self.evals:
       self.eval_encoder = nn.Sequential(
         nn.Conv1d(1, 32, kernel_size=3, padding=1),
@@ -54,6 +56,7 @@ class Transformer(nn.Module):
         nn.ReLU(),
       )
 
+    # Time encoder: processes per-move time information.
     if self.times:
       self.time_encoder = nn.Sequential(
         nn.Conv1d(1, 32, kernel_size=3, padding=1),
@@ -67,53 +70,60 @@ class Transformer(nn.Module):
         nn.ReLU(),
       )
 
-    self.positional_encoding = PositionalEncoding(d_model, dropout, max_len=num_moves)
+    # CLS token: a learnable parameter to aggregate sequence information.
+    self.cls_token = nn.Parameter(torch.randn(1, 1, d_model))
+    # Learnable positional embeddings: note the extra position for the CLS token.
+    self.pos_embedding = nn.Parameter(torch.randn(1, num_moves + 1, d_model))
+    self.dropout = nn.Dropout(dropout)
 
+    # Transformer encoder: processes the entire sequence.
     encoder_layer = nn.TransformerEncoderLayer(d_model, nhead, dim_feedforward, dropout, batch_first=True)
     self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers)
 
+    # Classifier head: produces final 4-class output.
     self.classifier = nn.Sequential(nn.Linear(d_model, hidden_dim), nn.ReLU(), nn.Dropout(dropout), nn.Linear(hidden_dim, 4))
 
   def forward(self, moves: torch.Tensor, evals: torch.Tensor = None, times: torch.Tensor = None) -> torch.Tensor:
+    # moves: (BS, T, C, H, W)
     BS, T, C, H, W = moves.shape
 
+    # Process moves with the convolutional encoder.
+    # Rearranging so that time is in the channel dimension for Conv3d: (BS, C, T, H, W)
     moves = moves.permute(0, 2, 1, 3, 4)
     moves = self.move_encoder(moves)
+    # Rearranging back: (BS, T, features)
+    # Note: After pooling, the spatial dims may be reduced; we flatten these along with the channel.
     moves = moves.permute(0, 2, 1, 3, 4).reshape(BS, T, -1)
 
+    # Start with move features.
     combined = moves
 
-    if self.evals:
-      evals = self.eval_encoder(evals.unsqueeze(1)).permute(0, 2, 1)
-      combined = torch.cat([combined, evals], dim=-1)
-    if self.times:
-      times = self.time_encoder(times.unsqueeze(1)).permute(0, 2, 1)
-      combined = torch.cat([combined, times], dim=-1)
+    # Process evals if provided.
+    if self.evals and evals is not None:
+      # evals expected shape: (BS, T). After unsqueeze: (BS, 1, T)
+      evals_enc = self.eval_encoder(evals.unsqueeze(1)).permute(0, 2, 1)
+      combined = torch.cat([combined, evals_enc], dim=-1)
 
-    combined = self.positional_encoding(combined)
+    # Process times if provided.
+    if self.times and times is not None:
+      # times expected shape: (BS, T). After unsqueeze: (BS, 1, T)
+      times_enc = self.time_encoder(times.unsqueeze(1)).permute(0, 2, 1)
+      combined = torch.cat([combined, times_enc], dim=-1)
 
+    # Prepend the CLS token to each sequence.
+    cls_tokens = self.cls_token.expand(BS, -1, -1)  # (BS, 1, d_model)
+    combined = torch.cat([cls_tokens, combined], dim=1)  # (BS, T + 1, d_model)
+
+    # Add learnable positional embeddings and apply dropout.
+    combined = combined + self.pos_embedding
+    combined = self.dropout(combined)
+
+    # Pass the sequence through the transformer encoder.
     output = self.transformer_encoder(combined)
-    output = torch.mean(output, dim=1)
+    # Use the CLS token (first token) as the aggregated representation.
+    cls_output = output[:, 0]
 
-    return self.classifier(output)
-
-
-class PositionalEncoding(nn.Module):
-  def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
-    super().__init__()
-    self.dropout = nn.Dropout(p=dropout)
-
-    position = torch.arange(0, max_len).unsqueeze(1)
-    div_term = torch.exp(torch.arange(0, d_model, 2) * -(math.log(10000.0) / d_model))
-    pe = torch.zeros(max_len, d_model)
-    pe[:, 0::2] = torch.sin(position * div_term)
-    pe[:, 1::2] = torch.cos(position * div_term)
-    pe = pe.unsqueeze(0)
-    self.register_buffer('pe', pe)
-
-  def forward(self, x: torch.Tensor) -> torch.Tensor:
-    x = x + self.pe[:, : x.size(1)]
-    return self.dropout(x)
+    return self.classifier(cls_output)
 
 
 class ConvLSTM(nn.Module):
@@ -126,9 +136,9 @@ class ConvLSTM(nn.Module):
     self.conv2 = nn.Conv2d(64, 128, 3)
     self.conv3 = nn.Conv2d(128, 256, 3)
     dim = 1024 + evals + times
-    self.lstm = nn.LSTM(dim, 256, num_layers=2, batch_first=True, bidirectional=True)
+    self.lstm = nn.LSTM(dim, 256, batch_first=True)
     # self.fc = nn.Sequential(nn.Linear(1024, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4))
-    self.fc = nn.Linear(512, 4)
+    self.fc = nn.Linear(256, 4)
 
   def forward(self, moves: torch.Tensor, evals: torch.Tensor = None, times: torch.Tensor = None) -> torch.Tensor:
     BS, T, C, H, W = moves.shape

@@ -25,7 +25,7 @@ parser.add_argument('--times', action=argparse.BooleanOptionalAction, default=Fa
 parser.add_argument('--limit', type=int, default=1000)
 parser.add_argument('--data', type=str, default='processed', choices=['synthetic', 'processed'])
 parser.add_argument('--num-moves', type=int, default=40)
-parser.add_argument('--engine-prob', type=float, default=0.3)
+parser.add_argument('--engine-prob', type=float, default=0.5)
 parser.add_argument('--batch-size', type=int, default=64)
 parser.add_argument('--channels', type=int, default=6, choices=[6, 12])
 parser.add_argument('--lr', type=float, default=1e-3)
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     'conv3': Conv3(channels=args.channels).to(device),
     'conv6': Conv6(channels=args.channels).to(device),
     'convlstm': ConvLSTM(channels=args.channels, evals=args.evals, times=args.times).to(device),
-    'transformer': Transformer(channels=args.channels, evals=args.evals, times=args.times).to(device),
+    'transformer': Transformer(channels=args.channels, num_moves=args.num_moves, evals=args.evals, times=args.times).to(device),
   }[args.model]
   name = model.__class__.__name__
   if isinstance(model, Transformer) or isinstance(model, ConvLSTM):

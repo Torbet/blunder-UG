@@ -3,6 +3,7 @@ const init = (fen) => {
   const rating = urlParams.get("rating") || 1200;
 
   var game = new Chess(fen);
+  var side = game.turn();
 
   const onDragStart = (source, piece, position, orientation) => {
     if (game.game_over()) return false;
@@ -23,7 +24,7 @@ const init = (fen) => {
       alert("Game Over");
       window.location.reload();
     }
-    if (game.turn() == "b") {
+    if (game.turn() != side) {
       const response = await fetch(`/maia/${game.fen()}?rating=${rating}`);
       const fen = await response.text();
       game.load(fen);
