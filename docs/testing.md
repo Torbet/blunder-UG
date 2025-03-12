@@ -192,4 +192,3 @@
 - Improve test automation
 - Optimize inference pipeline
 - Expand participant pool
-
