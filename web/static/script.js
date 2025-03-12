@@ -18,7 +18,6 @@ const init = (fen) => {
   const onChange = async () => {
     const response = await fetch(`/move/${game.fen()}?rating=${rating}`);
     const evaluation = parseFloat(await response.text());
-    console.log(evaluation);
     $("#cheat").prop("disabled", evaluation > 0);
     if (game.game_over()) {
       alert("Game Over");
@@ -35,6 +34,7 @@ const init = (fen) => {
   const config = {
     draggable: true,
     position: game.fen(),
+    orientation: game.turn() == "w" ? "white" : "black",
     onDragStart,
     onDrop,
     onChange,

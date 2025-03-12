@@ -52,7 +52,7 @@ def store_data(elo, fens, labels):
 
 app = Flask(__name__, static_folder='web/static', template_folder='web/templates')
 app.secret_key = 'super secret key'
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
+# app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 600
 
 
 @app.route('/')
@@ -63,8 +63,6 @@ def index():
 @app.route('/play')
 def play():
   board = chess.Board(openings[random.randint(0, len(openings) - 1)])
-  while board.turn != chess.WHITE:
-    board = chess.Board(openings[random.randint(0, len(openings) - 1)])
   session['fens'] = [board.fen()]
   session['labels'] = [0]
   return render_template('play.html', fen=board.fen())
