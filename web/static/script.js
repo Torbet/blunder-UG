@@ -19,7 +19,8 @@ const init = (fen) => {
   const onChange = async () => {
     const response = await fetch(`/move/${game.fen()}?rating=${rating}`);
     const evaluation = parseFloat(await response.text());
-    $("#cheat").prop("disabled", evaluation > 0);
+    var disabled = side == "w" ? evaluation > 0 : evaluation < 0;
+    $("#cheat").prop("disabled", disabled);
     if (game.game_over()) {
       alert("Game Over");
       window.location.reload();
