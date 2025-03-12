@@ -115,7 +115,7 @@ if __name__ == '__main__':
   print(f'Test AUC: {test_results["auc"]:.4f}')
 
   if args.save:
-    name = f'{name}_{args.data}_{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.weight_decay}_{args.epochs}'
+    name = f'{name}_{args.data}_{args.channels}_{args.limit}_{args.num_moves}_{args.engine_prob}_{args.batch_size}_{args.lr}_{args.weight_decay}_{args.epochs}'
     torch.save(model.state_dict(), f'results/weights/{name}.pt')
 
     keys = ['loss', 'accuracy', 'precision', 'recall', 'f1', 'auc']

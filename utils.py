@@ -20,7 +20,8 @@ class SyntheticDataset(Dataset):
     shuffle = np.random.permutation(4 * limit)
     self.moves = data['moves'][shuffle]
     self.evals = data['evals'][shuffle]
-    self.move_labels = data['move_labels'][shuffle]
+    self.times = data['times'][shuffle]
+    # self.move_labels = data['move_labels'][shuffle]
     self.game_labels = data['game_labels'][shuffle]
 
   def __len__(self):
@@ -30,7 +31,8 @@ class SyntheticDataset(Dataset):
     return (
       torch.tensor(self.moves[idx], device=self.device, dtype=torch.float32),
       torch.tensor(self.evals[idx], device=self.device, dtype=torch.float32),
-      torch.tensor(self.move_labels[idx], device=self.device, dtype=torch.long),
+      torch.tensor(self.times[idx], device=self.device, dtype=torch.float32),
+      # torch.tensor(self.move_labels[idx], device=self.device, dtype=torch.long),
       torch.tensor(self.game_labels[idx], device=self.device, dtype=torch.long),
     )
 
