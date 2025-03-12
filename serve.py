@@ -63,7 +63,7 @@ def index():
 @app.route('/play')
 def play():
   board = chess.Board(openings[random.randint(0, len(openings) - 1)])
-  while board.turn != random.randint(0, 1):
+  while board.turn != bool(random.getrandbits(1)):
     board = chess.Board(openings[random.randint(0, len(openings) - 1)])
   session['fens'] = [board.fen()]
   session['labels'] = [0]
