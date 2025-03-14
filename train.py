@@ -23,7 +23,7 @@ parser.add_argument(
 parser.add_argument('--evals', action=argparse.BooleanOptionalAction, default=False)
 parser.add_argument('--times', action=argparse.BooleanOptionalAction, default=False)
 parser.add_argument('--limit', type=int, default=1000)
-parser.add_argument('--data', type=str, default='processed', choices=['synthetic', 'processed'])
+parser.add_argument('--data', type=str, default='processed', choices=['generated', 'processed'])
 parser.add_argument('--num-moves', type=int, default=40)
 parser.add_argument('--engine-prob', type=float, default=0.5)
 parser.add_argument('--batch-size', type=int, default=64)
@@ -86,7 +86,7 @@ if __name__ == '__main__':
     if model.evals or model.times:
       name += f'({'evals' if model.evals else ''}{', ' if model.evals and model.times else ''}{'times' if model.times else ''})'
   print(f'Model: {name}')
-  if args.data == 'synthetic':
+  if args.data == 'generated':
     dataset = SyntheticDataset(args.limit, args.num_moves, args.engine_prob, device)
   else:
     dataset = ProcessedDataset(args.limit, args.num_moves, args.channels, device)

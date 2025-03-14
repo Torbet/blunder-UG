@@ -136,9 +136,9 @@ class ConvLSTM(nn.Module):
     self.conv2 = nn.Conv2d(64, 128, 3)
     self.conv3 = nn.Conv2d(128, 256, 3)
     dim = 1024 + evals + times
-    self.lstm = nn.LSTM(dim, 256, batch_first=True)
+    self.lstm = nn.LSTM(dim, 512, batch_first=True)
     # self.fc = nn.Sequential(nn.Linear(1024, 512), nn.ReLU(), nn.Dropout(0.5), nn.Linear(512, 4))
-    self.fc = nn.Linear(256, 4)
+    self.fc = nn.Linear(512, 4)
 
   def forward(self, moves: torch.Tensor, evals: torch.Tensor = None, times: torch.Tensor = None) -> torch.Tensor:
     BS, T, C, H, W = moves.shape
