@@ -22,7 +22,3 @@ models=(convlstm transformer)
 # Evaluate using 12-channel configuration
 channels=12
 evaluate
-
-# Evaluate using 6-channel configuration
-channels=6
-evaluate

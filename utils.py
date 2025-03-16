@@ -61,25 +61,39 @@ class ProcessedDataset(Dataset):
 
 
 class HumanDataset(Dataset):
-  def __init__(self, channels: int, device: torch.device = torch.device('cpu')):
+  def __init__(self, num_moves: int, channels: int, device: torch.device = torch.device('cpu')):
     self.device = device
     data = np.load(os.path.join(os.path.dirname(__file__), f'data/human/games_{channels}.npz'))
-    self.moves = data['moves'][:, :60]
-    self.evals = data['evals'][:, :60]
-    self.times = data['times'][:, :60]
-    self.move_labels = data['move_labels'][:, :60]
-    self.game_labels = data['game_labels']
+    self.moves_all = data['moves']  # shape: (n_games, n_moves, channels, 8, 8)
+    self.evals_all = data['evals']  # shape: (n_games, n_moves)
+    self.times_all = data['times']  # shape: (n_games, n_moves)
+    self.move_labels_all = data['move_labels']  # shape: (n_games, n_moves)
+    self.game_labels = data['game_labels']  # shape: (n_games,)
+
+    self.chunk_length = num_moves
+    self.chunks = []  # list of (game_idx, start, end)
+    n_games = self.moves_all.shape[0]
+    n_moves = self.moves_all.shape[1]
+    for i in range(n_games):
+      # Compute number of non-overlapping chunks of length 60 for this game.
+      num_chunks = n_moves // self.chunk_length
+      for j in range(num_chunks):
+        start = j * self.chunk_length
+        end = start + self.chunk_length
+        self.chunks.append((i, start, end))
 
   def __len__(self):
-    return len(self.moves)
+    return len(self.chunks)
 
   def __getitem__(self, idx):
-    return (
-      torch.tensor(self.moves[idx], device=self.device, dtype=torch.float32),
-      torch.tensor(self.evals[idx], device=self.device, dtype=torch.float32),
-      torch.tensor(self.times[idx], device=self.device, dtype=torch.float32),
-      torch.tensor(self.game_labels[idx], device=self.device, dtype=torch.long),
-    )
+    game_idx, start, end = self.chunks[idx]
+    # Get the 60-move chunk for each array
+    moves = torch.tensor(self.moves_all[game_idx, start:end], device=self.device, dtype=torch.float32)
+    evals = torch.tensor(self.evals_all[game_idx, start:end], device=self.device, dtype=torch.float32)
+    times = torch.tensor(self.times_all[game_idx, start:end], device=self.device, dtype=torch.float32)
+    # The game label remains the same for all chunks of the game
+    game_label = torch.tensor(self.game_labels[game_idx], device=self.device, dtype=torch.long)
+    return moves, evals, times, game_label
 
 
 def split_data(dataset: Dataset, batch_size: int = 64) -> tuple[DataLoader, DataLoader, DataLoader]:

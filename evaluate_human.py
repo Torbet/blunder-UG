@@ -12,7 +12,7 @@ import os, glob, csv
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--model', type=str, default='transformer', choices=['convlstm', 'transformer'])
-parser.add_argument('--channels', type=int, default=12, choices=[6, 12])
+parser.add_argument('--channels', type=int, default=6, choices=[6, 12])
 parser.add_argument('--evals', action=argparse.BooleanOptionalAction, default=False)
 parser.add_argument('--times', action=argparse.BooleanOptionalAction, default=False)
 args = parser.parse_args()
@@ -44,11 +44,12 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict[str, float]:
 
 
 if __name__ == '__main__':
-  dataset = HumanDataset(channels=args.channels, device=device)
+  num_moves = 60
+  dataset = HumanDataset(num_moves=num_moves, channels=args.channels, device=device)
   loader = torch.utils.data.DataLoader(dataset, batch_size=1)
   model = {
     'convlstm': ConvLSTM(channels=args.channels, evals=args.evals, times=args.times).to(device),
-    'transformer': Transformer(channels=args.channels, num_moves=60, evals=args.evals, times=args.times).to(device),
+    'transformer': Transformer(channels=args.channels, num_moves=num_moves, evals=args.evals, times=args.times).to(device),
   }[args.model].to(device)
   name = model.__class__.__name__
   if isinstance(model, Transformer) or isinstance(model, ConvLSTM):
@@ -60,14 +61,16 @@ if __name__ == '__main__':
   files = glob.glob(pattern)
 
   for file in files:
+    print(f'Evaluating {file}')
     model.load_state_dict(torch.load(file, weights_only=True, map_location=device))
     m = evaluate(model, loader)
-    new_name = file.replace('weights/', '').replace('.pt', '.csv').replace('generated', 'human')
+    dataset = 'generated' if 'generated' in file else 'processed'
+    new_name = file.replace('weights/', '').replace('.pt', '.csv').replace('generated', 'human').replace('processed', 'human')
     with open(new_name, 'w') as f:
       # epoch, type, loss, accuracy, precision, recall, f1, auc
       # ignore confusion matrix
       writer = csv.writer(f)
-      writer.writerow(['epoch', 'type', 'loss', 'accuracy', 'precision', 'recall', 'f1', 'auc'])
-      writer.writerow([0, 'test', m['loss'], m['accuracy'], m['precision'], m['recall'], m['f1'], m['auc']])
+      writer.writerow(['epoch', 'type', 'loss', 'accuracy', 'precision', 'recall', 'f1', 'auc', 'dataset'])
+      writer.writerow([0, 'test', m['loss'], m['accuracy'], m['precision'], m['recall'], m['f1'], m['auc'], dataset])
 
   print('Done')
