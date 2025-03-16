@@ -31,6 +31,7 @@ parser.add_argument('--channels', type=int, default=6, choices=[6, 12])
 parser.add_argument('--lr', type=float, default=1e-3)
 parser.add_argument('--weight-decay', type=float, default=1e-4)
 parser.add_argument('--epochs', type=int, default=20)
+parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--save', action=argparse.BooleanOptionalAction, default=False)
 args = parser.parse_args()
 print(' '.join(f'{k}={v}' for k, v in vars(args).items()))
@@ -70,7 +71,7 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict[str, float]:
 
 
 if __name__ == '__main__':
-  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+  device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
   model = {
     'dense1': Dense1(channels=args.channels).to(device),
     'dense3': Dense3(channels=args.channels).to(device),
@@ -92,7 +93,7 @@ if __name__ == '__main__':
     dataset = ProcessedDataset(args.limit, args.num_moves, args.channels, device)
   train_loader, val_loader, test_loader = split_data(dataset, args.batch_size)
   optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-  # scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_loader), epochs=args.epochs)
+  scheduler = optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, steps_per_epoch=len(train_loader), epochs=args.epochs)
 
   results = {}
   for epoch in range(args.epochs):
@@ -106,7 +107,7 @@ if __name__ == '__main__':
     print(f'Val Precision: {val_results["precision"]:.4f}, Val Recall: {val_results["recall"]:.4f}, Val F1: {val_results["f1"]:.4f}')
     print(f'Val Confusion Matrix:\n{val_results["confusion"]}')
     print(f'Val AUC: {val_results["auc"]:.4f}')
-    # scheduler.step()
+    scheduler.step()
 
   test_results = evaluate(model, test_loader)
   print(f'Test Loss: {test_results["loss"]:.4f}, Test Accuracy: {test_results["accuracy"]:.4f}')

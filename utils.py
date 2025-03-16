@@ -60,6 +60,28 @@ class ProcessedDataset(Dataset):
     )
 
 
+class HumanDataset(Dataset):
+  def __init__(self, channels: int, device: torch.device = torch.device('cpu')):
+    self.device = device
+    data = np.load(os.path.join(os.path.dirname(__file__), f'data/human/games_{channels}.npz'))
+    self.moves = data['moves'][:, :60]
+    self.evals = data['evals'][:, :60]
+    self.times = data['times'][:, :60]
+    self.move_labels = data['move_labels'][:, :60]
+    self.game_labels = data['game_labels']
+
+  def __len__(self):
+    return len(self.moves)
+
+  def __getitem__(self, idx):
+    return (
+      torch.tensor(self.moves[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.evals[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.times[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.game_labels[idx], device=self.device, dtype=torch.long),
+    )
+
+
 def split_data(dataset: Dataset, batch_size: int = 64) -> tuple[DataLoader, DataLoader, DataLoader]:
   n = len(dataset)
   t = int(0.8 * n)
@@ -125,3 +147,20 @@ def parse_emt(node: chess.pgn.ChildNode) -> float:
   if comment := node.comment:
     return float(comment.split(' ')[1][:-1])
   return None
+
+
+def generate_move_times(evals: np.ndarray, move_labels: np.ndarray) -> np.ndarray:
+  diffs = np.abs(np.concatenate(([evals[0] - 0], np.diff(evals))))
+  base_time = 1.0
+
+  engine_scaling = 0.1
+  human_scaling = 0.05
+  scaling_factors = np.where(move_labels == 1, engine_scaling, human_scaling)
+
+  raw_times = base_time + scaling_factors * diffs
+  noise = np.random.lognormal(mean=0, sigma=0.1, size=raw_times.shape)
+  move_times = raw_times * noise
+
+  move_times = np.clip(move_times, 0.5, 10.0)
+
+  return move_times

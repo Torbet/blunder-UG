@@ -7,13 +7,13 @@ train() {
                 if [ $model == "transformer" ] || [ $model == "convlstm" ]; then
                     for evals in "--evals" "--no-evals"; do
                         for times in "--times" "--no-times"; do
-                            echo "model: $model, lr: $lr, weight_decay: $weight_decay, evals: $evals, times: $times"
-                            python train.py --model $model --data $data --channels $channels --lr $lr --weight-decay $weight_decay $evals $times --limit 10000 --num-moves $num_moves --engine-prob $engine_prob --save
+                            echo "model: $model, lr: $lr, weight_decay: $weight_decay, evals: $evals, times: $times, channels: $channels, data: $data, num_moves: $num_moves, engine_prob: $engine_prob, gpu: $gpu"
+                            python train.py --model $model --data $data --channels $channels --lr $lr --weight-decay $weight_decay $evals $times --limit 10000 --num-moves $num_moves --engine-prob $engine_prob --gpu $gpu --save
                         done
                     done
                 else
-                    echo "model: $model, lr: $lr, weight_decay: $weight_decay"
-                    python train.py --model $model --data $data --channels $channels --lr $lr --weight-decay $weight_decay --limit 10000 --num-moves $num_moves --engine-prob $engine_prob --save
+                    echo "model: $model, lr: $lr, weight_decay: $weight_decay, channels: $channels, data: $data, num_moves: $num_moves, engine_prob: $engine_prob, gpu: $gpu"
+                    python train.py --model $model --data $data --channels $channels --lr $lr --weight-decay $weight_decay --limit 10000 --num-moves $num_moves --engine-prob $engine_prob --gpu $gpu --save
                 fi
             done
         done
@@ -24,6 +24,8 @@ train() {
 models=(convlstm)
 lrs=(1e-3 5e-4 1e-4 5e-5)
 weight_decays=(0 1e-4)
+gpu=1
+
 data="generated"
 num_moves=60
 engine_prob=0.5
@@ -31,9 +33,6 @@ channels=12
 
 train
 
-models=(convlstm)
-lrs=(1e-3 5e-4 1e-4 5e-5)
-weight_decays=(0 1e-4)
 data="processed"
 num_moves=40
 engine_prob=0
@@ -41,9 +40,6 @@ channels=6
 
 train
 
-models=(convlstm)
-lrs=(1e-3 5e-4 1e-4 5e-5)
-weight_decays=(0 1e-4)
 data="processed"
 num_moves=40
 engine_prob=0

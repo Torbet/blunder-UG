@@ -2,7 +2,7 @@ import argparse
 import numpy as np
 import chess
 import csv
-from utils import parse_board_12, parse_board_6, evaluate_board, maia_move, stockfish_move
+from utils import parse_board_12, parse_board_6, evaluate_board, maia_move, stockfish_move, generate_move_times
 from tqdm import trange
 
 np.random.seed(0)
@@ -31,23 +31,6 @@ evals = np.zeros((4 * limit, num_moves), dtype=float)
 times = np.zeros((4 * limit, num_moves), dtype=float)
 move_labels = np.zeros((4 * limit, num_moves), dtype=int)
 game_labels = np.zeros(4 * limit, dtype=int)
-
-
-def generate_move_times(evals: np.ndarray, move_labels: np.ndarray) -> np.ndarray:
-  diffs = np.abs(np.concatenate(([evals[0] - 0], np.diff(evals))))
-  base_time = 1.0
-
-  engine_scaling = 0.1
-  human_scaling = 0.05
-  scaling_factors = np.where(move_labels == 1, engine_scaling, human_scaling)
-
-  raw_times = base_time + scaling_factors * diffs
-  noise = np.random.lognormal(mean=0, sigma=0.1, size=raw_times.shape)
-  move_times = raw_times * noise
-
-  move_times = np.clip(move_times, 0.5, 10.0)
-
-  return move_times
 
 
 for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
@@ -96,6 +79,6 @@ for l, c in enumerate(['HvH', 'HvE', 'EvH', 'EvE']):
 shuffle = np.random.permutation(4 * limit)
 moves, evals, times, move_labels, game_labels = moves[shuffle], evals[shuffle], times[shuffle], move_labels[shuffle], game_labels[shuffle]
 
-output_path = f'data/generated/{limit}_{num_moves}_{engine_prob}.npz'
+output_path = f'data/generated/{limit}_{num_moves}_{engine_prob}_{channels}.npz'
 np.savez_compressed(output_path, moves=moves, evals=evals, times=times, move_labels=move_labels, game_labels=game_labels)
 print(f'Data saved to {output_path}')

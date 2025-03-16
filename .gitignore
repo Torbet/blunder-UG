@@ -1,4 +1,5 @@
 .vscode
+games.db
 .DS_Store
 .ruff_cache
 web/games.db
