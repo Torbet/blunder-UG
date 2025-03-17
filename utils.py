@@ -13,10 +13,10 @@ torch.cuda.manual_seed(0)
 
 
 class SyntheticDataset(Dataset):
-  def __init__(self, limit: int, num_moves: int, engine_prob: float, device: torch.device = torch.device('cpu')):
+  def __init__(self, limit: int, num_moves: int, engine_prob: float, channels: float = 12, device: torch.device = torch.device('cpu')):
     self.device = device
 
-    data = np.load(os.path.join(os.path.dirname(__file__), f'data/generated/{limit}_{num_moves}_{engine_prob}.npz'))
+    data = np.load(os.path.join(os.path.dirname(__file__), f'data/generated/{limit}_{num_moves}_{engine_prob}_{channels}.npz'))
     shuffle = np.random.permutation(4 * limit)
     self.moves = data['moves'][shuffle]
     self.evals = data['evals'][shuffle]

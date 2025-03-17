@@ -88,7 +88,7 @@ if __name__ == '__main__':
       name += f'({'evals' if model.evals else ''}{', ' if model.evals and model.times else ''}{'times' if model.times else ''})'
   print(f'Model: {name}')
   if args.data == 'generated':
-    dataset = SyntheticDataset(args.limit, args.num_moves, args.engine_prob, device)
+    dataset = SyntheticDataset(args.limit, args.num_moves, args.engine_prob, args.channels, device)
   else:
     dataset = ProcessedDataset(args.limit, args.num_moves, args.channels, device)
   train_loader, val_loader, test_loader = split_data(dataset, args.batch_size)

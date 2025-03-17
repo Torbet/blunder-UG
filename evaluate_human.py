@@ -12,6 +12,7 @@ import os, glob, csv
 
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('--model', type=str, default='transformer', choices=['convlstm', 'transformer'])
+parser.add_argument('--data', type=str, default='generated', choices=['generated', 'processed'])
 parser.add_argument('--channels', type=int, default=6, choices=[6, 12])
 parser.add_argument('--evals', action=argparse.BooleanOptionalAction, default=False)
 parser.add_argument('--times', action=argparse.BooleanOptionalAction, default=False)
@@ -27,7 +28,6 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict[str, float]:
   with torch.no_grad():
     for moves, evals, times, game_labels in (t := tqdm(loader)):
       output = model(moves, evals, times)
-      output = output[:, :-1]
       labels.extend(game_labels.tolist())
       preds.extend(output.argmax(dim=1).tolist())
       probs.append(F.softmax(output, dim=1).cpu().numpy())  # Store softmax probabilities
@@ -44,7 +44,7 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict[str, float]:
 
 
 if __name__ == '__main__':
-  num_moves = 60
+  num_moves = 60 if args.data == 'generated' else 40
   dataset = HumanDataset(num_moves=num_moves, channels=args.channels, device=device)
   loader = torch.utils.data.DataLoader(dataset, batch_size=1)
   model = {
@@ -57,7 +57,7 @@ if __name__ == '__main__':
       name += f'({'evals' if model.evals else ''}{', ' if model.evals and model.times else ''}{'times' if model.times else ''})'
 
   # get models with all learning rates and weight decays, variables are name and channels, make sure data is 'generated'
-  pattern = os.path.join('results/weights', f'{name}_generated_{args.channels}*.pt')
+  pattern = os.path.join('results/weights', f'{name}_{args.data}_{args.channels}*.pt')
   files = glob.glob(pattern)
 
   for file in files:
