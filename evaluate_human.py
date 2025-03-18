@@ -27,7 +27,7 @@ def evaluate(model: nn.Module, loader: DataLoader) -> dict[str, float]:
   loss, labels, preds, probs = 0, [], [], []
   with torch.no_grad():
     for moves, evals, times, game_labels in (t := tqdm(loader)):
-      output = model(moves, evals, times)
+      output = model(moves, evals, times)[:, :-1]
       labels.extend(game_labels.tolist())
       preds.extend(output.argmax(dim=1).tolist())
       probs.append(F.softmax(output, dim=1).cpu().numpy())  # Store softmax probabilities

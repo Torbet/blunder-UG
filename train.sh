@@ -21,13 +21,17 @@ train() {
 }
 
 # models=(dense1 dense3 dense6 conv1 conv3 conv6 convlstm transformer)
-data="generated"
+models=(convlstm)
+data="processed"
 limit=10000
-models=(convlstm transformer)
-lrs=(1e-3 5e-4 1e-4 5e-5)
+lrs=(5e-4 1e-4)
 weight_decays=(0 1e-4)
-channels=6
-engine_prob=0.5
-num_moves=60
+engine_prob=0.0
+num_moves=40
+
 gpu=1
+channels=6
+train
+
+channels=12
 train

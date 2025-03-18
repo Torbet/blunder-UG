@@ -62,38 +62,61 @@ class ProcessedDataset(Dataset):
 
 class HumanDataset(Dataset):
   def __init__(self, num_moves: int, channels: int, device: torch.device = torch.device('cpu')):
+    assert num_moves in [40, 60], 'num_moves must be 40 or 60'
     self.device = device
-    data = np.load(os.path.join(os.path.dirname(__file__), f'data/human/games_{channels}.npz'))
-    self.moves_all = data['moves']  # shape: (n_games, n_moves, channels, 8, 8)
-    self.evals_all = data['evals']  # shape: (n_games, n_moves)
-    self.times_all = data['times']  # shape: (n_games, n_moves)
-    self.move_labels_all = data['move_labels']  # shape: (n_games, n_moves)
-    self.game_labels = data['game_labels']  # shape: (n_games,)
+    self.num_moves = num_moves
+    chunk_size = 40  # We always split into 40-move chunks
 
-    self.chunk_length = num_moves
-    self.chunks = []  # list of (game_idx, start, end)
-    n_games = self.moves_all.shape[0]
-    n_moves = self.moves_all.shape[1]
-    for i in range(n_games):
-      # Compute number of non-overlapping chunks of length 60 for this game.
-      num_chunks = n_moves // self.chunk_length
-      for j in range(num_chunks):
-        start = j * self.chunk_length
-        end = start + self.chunk_length
-        self.chunks.append((i, start, end))
+    data = np.load(os.path.join(os.path.dirname(__file__), f'data/human/games_{channels}.npz'))
+
+    # Raw data
+    raw_moves = data['moves']  # (num_games, max_moves, channels, 8, 8)
+    raw_evals = data['evals']  # (num_games, max_moves)
+    raw_times = data['times']  # (num_games, max_moves)
+    game_labels = data['game_labels']  # (num_games,)
+
+    # Store processed chunks
+    self.moves, self.evals, self.times, self.labels = [], [], [], []
+
+    # Process each game by splitting into 40-move chunks
+    for game_idx in range(raw_moves.shape[0]):
+      moves, evals, times = raw_moves[game_idx], raw_evals[game_idx], raw_times[game_idx]
+      game_label = game_labels[game_idx]
+
+      max_game_moves = moves.shape[0]  # Actual number of moves in the game
+
+      # Split into non-overlapping 40-move chunks
+      for start in range(0, max_game_moves, chunk_size):
+        end = min(start + chunk_size, max_game_moves)
+
+        # Extract 40-move chunks
+        move_chunk = moves[start:end]
+        eval_chunk = evals[start:end]
+        time_chunk = times[start:end]
+
+        # Always pad to `num_moves` (either 40 or 60)
+        pad_size = num_moves - move_chunk.shape[0]
+
+        move_chunk = np.pad(move_chunk, ((0, pad_size), (0, 0), (0, 0), (0, 0)), mode='constant')
+        eval_chunk = np.pad(eval_chunk, (0, pad_size), mode='constant')
+        time_chunk = np.pad(time_chunk, (0, pad_size), mode='constant')
+
+        # Store processed chunks
+        self.moves.append(move_chunk)
+        self.evals.append(eval_chunk)
+        self.times.append(time_chunk)
+        self.labels.append(game_label)  # Same game label for all chunks
 
   def __len__(self):
-    return len(self.chunks)
+    return len(self.moves)
 
   def __getitem__(self, idx):
-    game_idx, start, end = self.chunks[idx]
-    # Get the 60-move chunk for each array
-    moves = torch.tensor(self.moves_all[game_idx, start:end], device=self.device, dtype=torch.float32)
-    evals = torch.tensor(self.evals_all[game_idx, start:end], device=self.device, dtype=torch.float32)
-    times = torch.tensor(self.times_all[game_idx, start:end], device=self.device, dtype=torch.float32)
-    # The game label remains the same for all chunks of the game
-    game_label = torch.tensor(self.game_labels[game_idx], device=self.device, dtype=torch.long)
-    return moves, evals, times, game_label
+    return (
+      torch.tensor(self.moves[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.evals[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.times[idx], device=self.device, dtype=torch.float32),
+      torch.tensor(self.labels[idx], device=self.device, dtype=torch.long),
+    )
 
 
 def split_data(dataset: Dataset, batch_size: int = 64) -> tuple[DataLoader, DataLoader, DataLoader]:
